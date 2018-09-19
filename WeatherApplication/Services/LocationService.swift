@@ -87,7 +87,7 @@ class LocationService:NSObject,CLLocationManagerDelegate {
     }
     ///
     /// locationManager function anytime user's class is updated parses the user last location and returns
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         print(locations[locations.count - 1] as CLLocation)
         guard let lastLocation = locations.first else {
             return

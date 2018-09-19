@@ -12,4 +12,5 @@ class Constants {
     public static let mainUrl:String = "http://api.openweathermap.org/data/2.5/weather?"
     public static let appId:String = "&appid=e8a55697f8eea7730355992322a22e49"
     public static let unitsMetric = "&units=metric"
+    public static let imageUrl:String = "https://openweathermap.org/img/w/"
 }

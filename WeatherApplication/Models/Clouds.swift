@@ -6,6 +6,7 @@
 //  Copyright © 2018 Batin. All rights reserved.
 //
 
+
 struct Clouds: Codable {
     let all: Int?
 }
