@@ -27,13 +27,46 @@ class CurrentWeatherViewController: UIViewController,LocationServicesProtocol {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         //self.initialPoint() //call initial step function
-        self.initializeLocationService()
+        self.initialPoint()
     }
     
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
+    
+    
+    ///Initial point function is responsible to handle first entrance point to application
+    private func initialPoint(){
+        self.activityIndicator.startAnimating()
+        self.hideShowUIComponents(isHidden: true)
+        self.mainLabel.isHidden = true
+        let lastRecord = self.getLastWeatherInfoFromLocalStore()
+        let checkInternetConnection = InternetReachability.isConnectedToNetwork()
+        if  lastRecord != nil  { // checks if data nil or not
+            if(checkInternetConnection) {
+                self.initializeLocationService() // if data not nil and there is internet connection parse updated data from api
+            }
+            else if (checkInternetConnection == false) { // if there is no internet connection show chached data if less 24 hours
+                if (DateHelper.shared.hourDifferenceBetweenDates(date: (lastRecord!.datecreated)!) <= 24) {
+                    self.updateUI(currentWeatherInfo: lastRecord)
+                } else {
+                    self.deleteRecordFromLocalStore(nil) // if data is more than 24 hours than show no data available by passing nill value to update ui function
+                    self.updateUI(currentWeatherInfo: nil)
+                }
+            }
+            // else if lastRecord is nil check whether there is a internet connection, if there is try to parse updated data from Openweather api
+        } else if lastRecord == nil {
+            if(checkInternetConnection) {
+            } else {
+                // if there is no internet connection warn user and update UI with an nil value of lastRecord
+                self.displayMsg(title: GlobalErrors.internetErrorTitle.localizedDescription, msg: GlobalErrors.internetError.localizedDescription)
+                self.updateUI(currentWeatherInfo: lastRecord)
+            }
+        }
+    }
+    
+    
     
     /// The initializeLocationService initializes the LocationServiceProtocol delegate and starts the service for location parsing.
     /// if locatin parsing is succeed the tracingLocation function will fire
@@ -50,7 +83,6 @@ class CurrentWeatherViewController: UIViewController,LocationServicesProtocol {
         case .success( _): break
         case .failure(let error):
             self.displayMsg(title: LocalDataError.deleteErrorTitle.localizedDescription, msg: error.localizedDescription)
-        
         }
     }
     
@@ -103,22 +135,23 @@ class CurrentWeatherViewController: UIViewController,LocationServicesProtocol {
     /// - returns: User's current location weather if (CurrentLocation is nil) returns error
     private func getUserCurrentLocationWeatherData(currentLocation:UserLocation) {
         if  InternetReachability.isConnectedToNetwork() {
+            self.activityIndicator.startAnimating()
+            self.hideShowUIComponents(isHidden: true)
+            self.activityIndicator.isHidden = false
             let userLocation = currentLocation
             let postURL:URLRequest = URLRequest(url: URL(string: Constants.mainUrl + "lat=\(userLocation.latitude!)&lon=\(userLocation.longitude!)" + Constants.unitsMetric + Constants.appId)!)
-                self.client.getCurrentWeatherDataCurrentLocation(from:postURL) { result in
+              self.client.getCurrentWeatherDataCurrentLocation(from:postURL) { result in
                 switch result {
                 case .success(let weatherInfoResult):
                     guard (weatherInfoResult?.weather?.first?.main) != nil else {
                     self.displayMsg(title: GlobalErrors.unknownErrorTitle.localizedDescription, msg: APIError.responseUnsuccessful.localizedDescription)
                     return
                 }
-//                    self.updateUI(currentWeatherInfo: weatherInfoResult)
-                
-//                    self.chacheCurrentWeatherInfo(currentWeather: weatherInfoResult!, dateCreated: DateHelper.shared.getCurrentDate())
-//                    let weatherResultInfo = self.getLastWeatherInfoFromLocalStore()
-//                    if (weatherResultInfo != nil) {
-//                        self.updateUI(currentWeatherInfo: weatherResultInfo)
-//                    }
+                    self.chacheCurrentWeatherInfo(currentWeather: weatherInfoResult!, dateCreated: DateHelper.shared.getCurrentDate())
+                    let weatherResultInfo = self.getLastWeatherInfoFromLocalStore()
+                    if (weatherResultInfo != nil) {
+                        self.updateUI(currentWeatherInfo: weatherResultInfo)
+                    }
                 case .failure(let error):
                     self.activityIndicator.isHidden = true
                     self.displayMsg(title: GlobalErrors.unknownErrorTitle.localizedDescription, msg: error.localizedDescription)
@@ -156,6 +189,7 @@ class CurrentWeatherViewController: UIViewController,LocationServicesProtocol {
             self.hideShowUIComponents(isHidden: true)
             self.activityIndicator.isHidden = false
             self.mainLabel.isHidden = true
+            self.initializeLocationService()
         } else {
             self.hideShowUIComponents(isHidden: false)
             self.activityIndicator.isHidden = true
@@ -163,14 +197,12 @@ class CurrentWeatherViewController: UIViewController,LocationServicesProtocol {
              self.displayMsg(title: GlobalErrors.internetErrorTitle.localizedDescription, msg: GlobalErrors.internetError.localizedDescription)
         }
     }
-    
-    
-    
     //hideShowComponents function is responsible to hide or to show UI controls depending on value passed. It is created to manage component hide or show in one go.
     private func hideShowUIComponents(isHidden:Bool) {
         self.temperatureLabel.isHidden = isHidden
         self.windSpeedLabel.isHidden = isHidden
         self.windDirectionLabel.isHidden = isHidden
+        self.mainLabel.isHidden = isHidden
         self.cityLabel.isHidden = isHidden
         self.iconImageView.isHidden = isHidden
         self.windIconImageView.isHidden = isHidden
