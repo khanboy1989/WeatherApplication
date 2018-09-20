@@ -58,6 +58,7 @@ class CurrentWeatherViewController: UIViewController,LocationServicesProtocol {
             // else if lastRecord is nil check whether there is a internet connection, if there is try to parse updated data from Openweather api
         } else if lastRecord == nil {
             if(checkInternetConnection) {
+                self.initializeLocationService()
             } else {
                 // if there is no internet connection warn user and update UI with an nil value of lastRecord
                 self.displayMsg(title: GlobalErrors.internetErrorTitle.localizedDescription, msg: GlobalErrors.internetError.localizedDescription)
